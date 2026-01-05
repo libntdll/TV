@@ -85,8 +85,7 @@ function DoubanPageClient() {
   // 豆瓣模式加载状态
   const [loading, setLoading] = useState(false);
 
-  // 豆瓣模式分页状态 (SmoneTV Pattern)
-  const [currentPage, setCurrentPage] = useState(0);
+  // 豆瓣模式分页状态 (SmoneTV Pattern) - 使用动态偏移，不再需要 currentPage
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -484,8 +483,7 @@ function DoubanPageClient() {
 
         if (isSnapshotEqual(requestSnapshot, currentSnapshot)) {
           setDoubanData(data.list);
-          setHasMore(data.list.length >= PAGE_SIZE); // 如果返回满页，可能还有更多
-          setCurrentPage(0); // 重置页码
+          setHasMore(data.list.length > 0); // 只要有数据就可能还有更多
           setLoading(false);
 
           // 【缓存写入】保存到缓存，下次瞬间加载
@@ -524,14 +522,15 @@ function DoubanPageClient() {
       return;
     }
 
-    // 1. 创建快照
+    // 1. 创建快照 - 不再依赖 currentPage，使用动态偏移
     const requestSnapshot = {
       type,
       primarySelection,
       secondarySelection,
       multiLevelSelection: multiLevelValues,
       selectedWeekday,
-      currentPage: currentPage + 1,
+      // 记录当前数据长度作为分页起点
+      dataLength: doubanData.length,
     };
 
     // 2. 关键修复: 立即更新 ref 防止竞态条件
@@ -547,7 +546,9 @@ function DoubanPageClient() {
       setIsLoadingMore(true);
 
       let data: DoubanResult;
-      const pageStart = requestSnapshot.currentPage * PAGE_SIZE;
+      // ✅ 动态偏移: 从当前数据长度开始，适应 API 返回任意数量
+      const pageStart = requestSnapshot.dataLength;
+      console.log(`📍 [fetchMoreData] Requesting from offset: ${pageStart}`);
 
       // 3. 使用映射后的参数获取数据
       if (type === 'custom') {
@@ -641,8 +642,8 @@ function DoubanPageClient() {
             return [...prev, ...uniqueNewItems];
           });
 
-          setHasMore(data.list.length >= PAGE_SIZE);
-          setCurrentPage((prev) => prev + 1);
+          // ✅ 宽松的 hasMore 条件: 只要返回了数据就继续
+          setHasMore(data.list.length > 0);
         } else if (!isMatch) {
           console.log('⚠️ [fetchMoreData] Filter changed, discarding data');
         } else {
@@ -662,7 +663,6 @@ function DoubanPageClient() {
   }, [
     isLoadingMore,
     hasMore,
-    currentPage,
     type,
     primarySelection,
     secondarySelection,
@@ -671,6 +671,7 @@ function DoubanPageClient() {
     customCategories,
     doubanData.length,
     getRequestParams,
+    PAGE_SIZE,
   ]);
 
   // VirtualGrid 触底回调 - 触发加载更多
@@ -696,7 +697,6 @@ function DoubanPageClient() {
     }
 
     // 重置分页状态
-    setCurrentPage(0);
     setHasMore(true);
     setIsLoadingMore(false);
 
