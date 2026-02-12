@@ -19,8 +19,8 @@ import { useSourceFilter } from '@/hooks/useSourceFilter';
 import DoubanCardSkeleton from '@/components/DoubanCardSkeleton';
 import DoubanCustomSelector from '@/components/DoubanCustomSelector';
 import DoubanSelector, { SourceCategory } from '@/components/DoubanSelector';
+import LiteVideoCard from '@/components/LiteVideoCard';
 import PageLayout from '@/components/PageLayout';
-import VideoCard from '@/components/VideoCard';
 import VirtualizedVideoGrid from '@/components/VirtualizedVideoGrid';
 
 import { useGlobalCache } from '@/contexts/GlobalCacheContext';
@@ -1177,15 +1177,14 @@ function DoubanPageClient() {
           ) : currentSource !== 'auto' && sourceData.length > 0 ? (
             <VirtualizedVideoGrid
               data={sourceData}
-              virtualizationThreshold={72}
-              overscan={900}
+              virtualizationThreshold={60}
+              overscan={640}
               className='justify-start grid grid-cols-3 gap-x-2 gap-y-12 px-0 sm:px-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:gap-x-8 sm:gap-y-20'
               itemKey={(item) =>
                 `source-${item.id || item.title}-${item.year || ''}`
               }
               renderItem={(item) => (
-                <VideoCard
-                  from='douban'
+                <LiteVideoCard
                   title={item.title}
                   poster={item.poster}
                   year={item.year}
@@ -1205,10 +1204,10 @@ function DoubanPageClient() {
             </div>
           ) : (
             <VirtualizedVideoGrid
-              mode='always'
+              mode='auto'
               data={doubanData}
-              virtualizationThreshold={72}
-              overscan={900}
+              virtualizationThreshold={60}
+              overscan={640}
               onEndReached={handleGridEndReached}
               hasMore={hasMore}
               isLoadingMore={isLoadingMore || loading}
@@ -1217,15 +1216,12 @@ function DoubanPageClient() {
                 `douban-${item.id || item.title}-${item.year || ''}`
               }
               renderItem={(item) => (
-                <VideoCard
-                  from='douban'
+                <LiteVideoCard
                   title={item.title}
                   poster={item.poster}
-                  douban_id={Number(item.id)}
                   rate={item.rate}
                   year={item.year}
                   type={type === 'movie' ? 'movie' : ''}
-                  isBangumi={type === 'anime' && Boolean(selectedWeekday)}
                 />
               )}
             />
